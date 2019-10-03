@@ -1,12 +1,13 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
-import x from './img/x.svg';
+import x from './/img/x.svg';
 import './App.css';
-import {  Grid, Row, Col, Jumbotron, Button, 
-          FormGroup, ControlLabel, FormControl, 
+import {  Grid, Row, Col, Jumbotron, Button,
+          FormGroup, ControlLabel, FormControl,
           HelpBlock, Form, ButtonGroup,
           Accordion, Panel } from 'react-bootstrap';
 import ReactTags from 'react-tag-autocomplete';
+import axios from 'axios';
 
 class App extends Component {
   render() {
@@ -19,18 +20,78 @@ class App extends Component {
 }
 
 class Session extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      yes_click : 0,
+      no_click: 0,
+      not_sure_click: 0
+    };
+  }
+
+  handleYesClick() {
+    console.log("bang");
+    var session = this;
+    axios.post("http://localhost:5000", {
+        requested : this.state.yes_click
+      })
+      .then(function (res) {
+          console.log(res)
+          console.log(session.state)
+          session.setState({yes_click: res.data});
+      })
+      .catch(function (error) {
+          console.log(error);
+      });
+  }
+
+  handleNoClick() {
+    var session = this;
+    axios.post("http://localhost:5000", {
+        requested : this.state.no_click
+      })
+      .then(function (res) {
+          console.log(res)
+          console.log(session.state)
+          session.setState({no_click: res.data});
+      })
+      .catch(function (error) {
+          console.log(error);
+      });
+  }
+
+  handleNotSureClick() {
+    console.log("bang");
+    var session = this;
+    axios.post("http://localhost:5000", {
+        requested : this.state.not_sure_click
+      })
+      .then(function (res) {
+          console.log(res)
+          console.log(session.state)
+          session.setState({not_sure_click: res.data});
+      })
+      .catch(function (error) {
+          console.log(error);
+      });
+  }
   render() {
+    const requested = this.state.requested;
     return (
       <div id="session">
         <div id="my-container">
           <div id="header">
             Plato
           </div>
-          <Dataview/>
+          <Dataview
+            requested={this.state.requested}
+          />
           <ModelSelector
+            onYesClick={() => this.handleYesClick()}
+            onNoClick={() => this.handleNoClick()}
+            onNotSureClick={() => this.handleNotSureClick()}
             predictVar = 'isHOF'
-            features = {{
-              'careerRBI': 2200,
+            features = {{'careerRBI': 2200,
               'careerHR': 400,
               'numChampionships': 2,
               'position': "SS"
@@ -48,6 +109,11 @@ class Session extends React.Component {
             ]}
           />
           <div id="sidebar">Answers</div>
+          <TestServer 
+            yes_click={this.state.yes_click}
+            no_click={this.state.no_click}
+            not_sure_click={this.state.not_sure_click}
+          />
         </div>
       </div>
     );
@@ -115,6 +181,22 @@ function PredictionVar(props) {
   );
 }
 
+function TestServer(props) {
+  return (
+    <div>
+    <h4>
+      Times yes clicked on: {props.yes_click}
+    </h4>
+    <h4>
+      Times no clicked on: {props.no_click}
+    </h4>
+    <h4>
+      Times not sure clicked on: {props.not_sure_click}
+    </h4>
+    </div>
+  );
+}
+
 function VariableChoice(props) {
   return (
     <FormGroup controlId="formVariableChoice">
@@ -124,7 +206,7 @@ function VariableChoice(props) {
           tags={props.tags}
           suggestions={props.suggestions}
           handleDelete={props.handleDelete.bind(this)}
-          handleAddition={props.handleAddition.bind(this)} 
+          handleAddition={props.handleAddition.bind(this)}
           autoresize={false}
           autofocus={false}
           minQueryLength={0}
@@ -172,7 +254,7 @@ class Dataview extends React.Component {
     tags.splice(i, 1)
     this.setState({ tags, suggestions })
   }
- 
+
   handleAddition (tag) {
     const tags = [].concat(this.state.tags, tag);
     const suggestions = this.state.suggestions.slice(0);
@@ -239,9 +321,9 @@ class ModelSelector extends React.Component {
           {proposedPoint}
           <p>What value do you expect for the attribute <strong>{this.props.predictVar}</strong>?</p>
           <ButtonGroup className="userLabel">
-            <Button>Yes</Button>
-            <Button>No</Button>
-            <Button>Not Sure</Button>
+            <Button onClick={this.props.onYesClick}>Yes</Button>
+            <Button onClick={this.props.onNoClick}>No</Button>
+            <Button onClick={this.props.onNotSureClick}>Not Sure</Button>
           </ButtonGroup>
         </fieldset>
       </div>
@@ -273,7 +355,5 @@ class ModelViewer extends React.Component {
     );
   }
 }
-
-
-
 export default App;
+
