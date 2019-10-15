@@ -23,73 +23,67 @@ class Session extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      yes_click : 0,
-      no_click: 0,
-      not_sure_click: 0
+      m1 : '',
+      m2 : '',
+      clf_l1: '',
+      clf_l2: '',
+      distance_knn: '',
+      entropy_dt: '',
+      gini_dt: '',
+      nb_1: '',
+      nb_2: '',
+      uniform_knn: '',
+      datapoint : '',
+      age: '',
+      hours: '',
+      capital_gain: '',
+      capital_loss: '',
+      education: '',
+      label: ''
     };
   }
 
-  handleYesClick() {
-    console.log("bang");
+  handleClick() {
     var session = this;
     axios.post("http://localhost:5000", {
-        requested : this.state.yes_click
+        /*requested : this.state.random_click*/
       })
       .then(function (res) {
           console.log(res)
+          let data = res.data
           console.log(session.state)
-          session.setState({yes_click: res.data});
-      })
+          session.setState({m1: data.m1, 
+                            m2: data.m2, 
+                            clf_l1: data.clf_l1, 
+                            clf_l2: data.clf_l2, 
+                            distance_knn: data.distance_knn,
+                            entropy_dt: data.entropy_dt,
+                            gini_dt: data.gini_dt,
+                            nb_1: data.nb_1,
+                            nb_2: data.nb_2,
+                            uniform_knn: data.uniform_knn,
+                            age: data.age,
+                            hours: data.hours,
+                            capital_gain: data.capital_gain,
+                            capital_loss: data.capital_loss,
+                            education: data.education,
+                            label: data.label});
+                          })
       .catch(function (error) {
           console.log(error);
       });
   }
 
-  handleNoClick() {
-    var session = this;
-    axios.post("http://localhost:5000", {
-        requested : this.state.no_click
-      })
-      .then(function (res) {
-          console.log(res)
-          console.log(session.state)
-          session.setState({no_click: res.data});
-      })
-      .catch(function (error) {
-          console.log(error);
-      });
-  }
-
-  handleNotSureClick() {
-    console.log("bang");
-    var session = this;
-    axios.post("http://localhost:5000", {
-        requested : this.state.not_sure_click
-      })
-      .then(function (res) {
-          console.log(res)
-          console.log(session.state)
-          session.setState({not_sure_click: res.data});
-      })
-      .catch(function (error) {
-          console.log(error);
-      });
-  }
   render() {
-    const requested = this.state.requested;
     return (
       <div id="session">
         <div id="my-container">
           <div id="header">
             Plato
           </div>
-          <Dataview
-            requested={this.state.requested}
-          />
+          <Dataview/>
           <ModelSelector
-            onYesClick={() => this.handleYesClick()}
-            onNoClick={() => this.handleNoClick()}
-            onNotSureClick={() => this.handleNotSureClick()}
+            onClick={() => this.handleClick()}
             predictVar = 'isHOF'
             features = {{'careerRBI': 2200,
               'careerHR': 400,
@@ -110,9 +104,22 @@ class Session extends React.Component {
           />
           <div id="sidebar">Answers</div>
           <TestServer 
-            yes_click={this.state.yes_click}
-            no_click={this.state.no_click}
-            not_sure_click={this.state.not_sure_click}
+            m1={this.state.m1}
+            m2={this.state.m2}
+            clf_l1={this.state.clf_l1}
+            clf_l2={this.state.clf_l2}
+            distance_knn={this.state.distance_knn}
+            entropy_dt={this.state.entropy_dt}
+            gini_dt={this.state.gini_dt}
+            nb_1={this.state.nb_1}
+            nb_2={this.state.nb_2}
+            uniform_knn={this.state.uniform_knn}
+            age={this.state.age}
+            education={this.state.education}
+            capital_loss={this.state.capital_loss}
+            capital_gain={this.state.capital_gain}
+            hours={this.state.hours}
+            label={this.state.label}
           />
         </div>
       </div>
@@ -184,14 +191,57 @@ function PredictionVar(props) {
 function TestServer(props) {
   return (
     <div>
+    <h2> Predictions </h2>
     <h4>
-      Times yes clicked on: {props.yes_click}
+      M1: {props.m1}
     </h4>
     <h4>
-      Times no clicked on: {props.no_click}
+      M2: {props.m2}
     </h4>
     <h4>
-      Times not sure clicked on: {props.not_sure_click}
+      CLF l1 LR: {props.clf_l1}
+    </h4>
+    <h4>
+      CLF l2 LR: {props.clf_l2}
+    </h4>
+    <h4>
+      Distance KNN: {props.distance_knn}
+    </h4>
+    <h4>
+      Entropy DT: {props.entropy_dt}
+    </h4>
+    <h4>
+      NB 1: {props.nb_1}
+    </h4>
+    <h4>
+      NB 2: {props.nb_2}
+    </h4>
+    <h4>
+      Gini DT: {props.gini_dt}
+    </h4>
+    <h4>
+      Uniform KNN: {props.uniform_knn}
+    </h4>
+    <h2>
+      Datapoint
+    </h2>
+    <h4>
+      Age: {props.age}
+    </h4>
+    <h4>
+      Education: {props.education}
+    </h4>
+    <h4>
+      Hours per week: {props.hours}
+    </h4>
+    <h4>
+      Capital Gain: {props.capital_gain}
+    </h4>
+    <h4>
+      Capital Loss: {props.capital_loss}
+    </h4>
+    <h4>
+      Actual label: {props.label}
     </h4>
     </div>
   );
@@ -321,9 +371,10 @@ class ModelSelector extends React.Component {
           {proposedPoint}
           <p>What value do you expect for the attribute <strong>{this.props.predictVar}</strong>?</p>
           <ButtonGroup className="userLabel">
-            <Button onClick={this.props.onYesClick}>Yes</Button>
-            <Button onClick={this.props.onNoClick}>No</Button>
-            <Button onClick={this.props.onNotSureClick}>Not Sure</Button>
+            <Button >Yes</Button>
+            <Button >No</Button>
+            <Button >Not Sure</Button>
+            <Button onClick={this.props.onClick}>Random Datapoint</Button>
           </ButtonGroup>
         </fieldset>
       </div>
