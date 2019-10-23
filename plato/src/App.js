@@ -23,58 +23,70 @@ class Session extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      m1 : '',
-      m2 : '',
-      clf_l1: '',
-      clf_l2: '',
-      distance_knn: '',
-      entropy_dt: '',
-      gini_dt: '',
-      nb_1: '',
-      nb_2: '',
-      uniform_knn: '',
-      datapoint : '',
-      age: '',
-      hours: '',
-      capital_gain: '',
-      capital_loss: '',
-      education: '',
-      label: ''
+      models: '',
+      dp_hist: [],
+      dp_index: -1
     };
   }
 
-  handleClick() {
-    var session = this;
-    axios.post("http://localhost:5000", {
-        /*requested : this.state.random_click*/
+  get_models(){
+    var session = this
+    axios.get("http://localhost:5000", {
       })
       .then(function (res) {
-          console.log(res)
           let data = res.data
-          console.log(session.state)
-          session.setState({m1: data.m1, 
-                            m2: data.m2, 
-                            clf_l1: data.clf_l1, 
-                            clf_l2: data.clf_l2, 
-                            distance_knn: data.distance_knn,
-                            entropy_dt: data.entropy_dt,
-                            gini_dt: data.gini_dt,
-                            nb_1: data.nb_1,
-                            nb_2: data.nb_2,
-                            uniform_knn: data.uniform_knn,
-                            age: data.age,
-                            hours: data.hours,
-                            capital_gain: data.capital_gain,
-                            capital_loss: data.capital_loss,
-                            education: data.education,
-                            label: data.label});
-                          })
+          session.setState({models: data.models})
+      })
       .catch(function (error) {
           console.log(error);
       });
   }
 
+  handleClick() {
+    var session = this
+    axios.post("http://localhost:5000", {
+      })
+      .then(function (res) {
+          let data = res.data
+          const new_models = session.state.models.map(function(model) {
+                                var name = model['name']
+                                var success = model['success']
+                                success.push(data.model_success[name])
+                                return {'name': name, 'success': success}
+                              });
+          console.log(session.state.dp_hist)
+          const new_dp_hist = session.state.dp_hist.concat({"age": data.age,
+                                                          "hours": data.hours,
+                                                          "capital_gain": data.capital_gain,
+                                                          "capital_loss": data.capital_loss,
+                                                          "education": data.education,
+                                                          "label": data.label
+                                                        })
+
+          console.log(new_dp_hist)
+          session.setState({
+                            models: new_models,
+                            dp_hist: new_dp_hist,
+                            dp_index: new_dp_hist.length - 1
+                          })
+                        })
+      .catch(function (error) {
+          console.log(error);
+      });
+  }
+
+  set_dp_index(i){
+    console.log("ah")
+    console.log(i)
+    this.setState({
+      dp_index: i
+    })
+  }
+
   render() {
+    if (this.state.models === ''){
+      this.get_models()
+    }
     return (
       <div id="session">
         <div id="my-container">
@@ -92,34 +104,13 @@ class Session extends React.Component {
             }}
           />
           <ModelViewer
-            models = {[
-              { 'name': "Random Forest", 'paramString': "∂=0.4", "performanceNum": 0.674, "performanceString": "Accuracy: 0.67" },
-              { 'name': "Random Forest", 'paramString': "∂=0.2", "performanceNum": 0.633, "performanceString": "Accuracy: 0.63" },
-              { 'name': "SVM", 'paramString': "C=1.0", "performanceNum": 0.593, "performanceString": "Accuracy: 0.59" },
-              { 'name': "kNN", 'paramString': "k=5", "performanceNum": 0.548, "performanceString": "Accuracy: 0.55" },
-              { 'name': "SVM", 'paramString': "C=0.5", "performanceNum": 0.519, "performanceString": "Accuracy: 0.52" },
-              { 'name': "kNN", 'paramString': "k=6", "performanceNum": 0.518, "performanceString": "Accuracy: 0.52" },
-              { 'name': "SVM", 'paramString': "C=0.4", "performanceNum": 0.474, "performanceString": "Accuracy: 0.47" }
-            ]}
+            models = {this.state.models}
+            set_dp_index={(i) => this.set_dp_index(i)}
           />
           <div id="sidebar">Answers</div>
           <TestServer 
-            m1={this.state.m1}
-            m2={this.state.m2}
-            clf_l1={this.state.clf_l1}
-            clf_l2={this.state.clf_l2}
-            distance_knn={this.state.distance_knn}
-            entropy_dt={this.state.entropy_dt}
-            gini_dt={this.state.gini_dt}
-            nb_1={this.state.nb_1}
-            nb_2={this.state.nb_2}
-            uniform_knn={this.state.uniform_knn}
-            age={this.state.age}
-            education={this.state.education}
-            capital_loss={this.state.capital_loss}
-            capital_gain={this.state.capital_gain}
-            hours={this.state.hours}
-            label={this.state.label}
+            dp_hist = {this.state.dp_hist}
+            dp_index = {this.state.dp_index}
           />
         </div>
       </div>
@@ -189,59 +180,43 @@ function PredictionVar(props) {
 }
 
 function TestServer(props) {
+  console.log(props)
+  var age = ''
+  var education = ''
+  var hours = ''
+  var capital_gain = ''
+  var capital_loss = ''
+  var label = ''
+  if (props.dp_index != -1) {
+    age = props.dp_hist[props.dp_index].age
+    education = props.dp_hist[props.dp_index].education
+    hours = props.dp_hist[props.dp_index].hours
+    capital_gain = props.dp_hist[props.dp_index].capital_gain
+    capital_loss = props.dp_hist[props.dp_index].capital_loss
+    label = props.dp_hist[props.dp_index].label
+  }
   return (
     <div>
-    <h2> Predictions </h2>
-    <h4>
-      M1: {props.m1}
-    </h4>
-    <h4>
-      M2: {props.m2}
-    </h4>
-    <h4>
-      CLF l1 LR: {props.clf_l1}
-    </h4>
-    <h4>
-      CLF l2 LR: {props.clf_l2}
-    </h4>
-    <h4>
-      Distance KNN: {props.distance_knn}
-    </h4>
-    <h4>
-      Entropy DT: {props.entropy_dt}
-    </h4>
-    <h4>
-      NB 1: {props.nb_1}
-    </h4>
-    <h4>
-      NB 2: {props.nb_2}
-    </h4>
-    <h4>
-      Gini DT: {props.gini_dt}
-    </h4>
-    <h4>
-      Uniform KNN: {props.uniform_knn}
-    </h4>
     <h2>
       Datapoint
     </h2>
     <h4>
-      Age: {props.age}
+      Age: {age}
     </h4>
     <h4>
-      Education: {props.education}
+      Education: {education}
     </h4>
     <h4>
-      Hours per week: {props.hours}
+      Hours per week: {hours}
     </h4>
     <h4>
-      Capital Gain: {props.capital_gain}
+      Capital Gain: {capital_gain}
     </h4>
     <h4>
-      Capital Loss: {props.capital_loss}
+      Capital Loss: {capital_loss}
     </h4>
     <h4>
-      Actual label: {props.label}
+      Actual label: {label}
     </h4>
     </div>
   );
@@ -385,14 +360,27 @@ class ModelSelector extends React.Component {
 
 class ModelViewer extends React.Component {
 
-  render() {
-    var iter = 0;
-    const model_code = this.props.models.map(function(model) {
-      iter+=1;
-      return <Panel header={model.name + ", " + model.paramString + ": " + model.performanceString} eventKey={iter}>Info</Panel>;
-// { 'name': "Random Forest", 'paramString': "∂=0.4", "performanceNum": 0.674, "performanceString": "Accuracy: 0.67" },
+  mouseOver(i, event){
+    console.log(i, event)
+    this.props.set_dp_index(i)
+  }
 
-    });
+  render() {
+    var session = this
+    var model_code = ''
+    if (this.props.models !== ''){
+      model_code = this.props.models.map((model) => {
+        var string_success = ''
+        string_success = model.success.map((check, index) => {
+          if (check == 'True'){
+            return <div style={{ display:'inline-block'}} key={index} onMouseOver={session.mouseOver.bind(session, index)}> {String.fromCharCode(9989)} </div>
+          } else {
+            return <div style={{ display:'inline-block'}} key={index} onMouseOver={session.mouseOver.bind(session, index)}> {String.fromCharCode(10060)} </div>
+          }
+        })
+        return <div> <div style={{ display:'inline-block'}}>{model.name}</div> {string_success} </div>;
+      });
+    }
 
     return (
       <div id="model_viewer">
@@ -401,6 +389,7 @@ class ModelViewer extends React.Component {
           <Accordion>
             {model_code}
           </Accordion>
+
         </fieldset>
       </div>
     );
