@@ -1,4 +1,9 @@
 from flask import Flask, request
+import sklearn
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+from sklearn.manifold import MDS
+
 import pickle
 import pandas as pd
 import json
@@ -36,9 +41,41 @@ models.append({'name': 'uniform_knn', 'model': uniform_knn, 'success': []})
 
 @app.route('/', methods = ["GET"])
 def get_models():
+    droppedData = training_df.drop(columns=('label'))[:200]
+    rawData = droppedData.to_json(orient='index')
+    mins = droppedData.min().to_json()
+    maxes = droppedData.max().to_json()
+    transformData = droppedData[droppedData.columns]
+    transformExtremes = {}
+
+    pca = PCA(n_components=2)
+    pca_results = pca.fit_transform(transformData)
+    pcadf = pd.DataFrame(data=pca_results[0:, 0:], columns=['x', 'y'])
+    transformExtremes["pca"] = [pcadf.min().to_json(), pcadf.max().to_json()]
+    pcaJson = pcadf.to_json()
+
+    mds = MDS(n_components=2)
+    mds_results = mds.fit_transform(transformData)
+    mdsdf = pd.DataFrame(data=mds_results[0:, 0:], columns=['x', 'y'])
+    transformExtremes["mds"] = [mdsdf.min().to_json(), mdsdf.max().to_json()]
+    mdsJson = mdsdf.to_json()
+
+    tsne = TSNE(n_components=2, perplexity=10)
+    tsne_results = tsne.fit_transform(transformData)
+    tsnedf = pd.DataFrame(data=tsne_results[0:, 0:], columns=['x', 'y'])
+    transformExtremes["tsne"] = [tsnedf.min().to_json(), tsnedf.max().to_json()]
+    tsneJson = tsnedf.to_json()
+
+
     models_init = [{key:value for (key, value) in model.items() if key not in ['model']} for model in models]
-    print(models_init)
-    return json.dumps({'models': models_init})
+    return json.dumps({'models': models_init,
+                       'rawData': rawData,
+                       'mins': mins,
+                       'maxes': maxes,
+                       'pca': pcaJson,
+                       'mds': mdsJson,
+                       'tsne': tsneJson,
+                       'transformExtremes': json.dumps(transformExtremes)})
 
 @app.route('/', methods = ["GET", "POST"])
 def get_predictions():
