@@ -237,8 +237,3 @@ div.tight {
   pointer-events: none;
   background-color: white;
 }
-
-.model {
-  display: inline-block;
-  float: left;
-}

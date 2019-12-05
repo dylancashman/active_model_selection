@@ -10,6 +10,8 @@ import {  Grid, Row, Col, Jumbotron, Button,
           Accordion, Panel } from 'react-bootstrap';
 import ReactTags from 'react-tag-autocomplete';
 import axios from 'axios';
+import Nouislider from 'react-nouislider';
+import "nouislider/distribute/nouislider.css";
 
 class App extends Component {
   render() {
@@ -29,13 +31,22 @@ class Session extends React.Component {
       dp_hist: [],
       dp_index: -1,
       rawData: [],
+      predictionData: '',
       mins: [],
       maxes: [],
       pca: [],
       mds: [],
       tsne: [],
-      transformExtremes: []
+      transformExtremes: [],
+      slider_values: []
     };
+    this.slider_handler = this.slider_handler.bind(this)
+  }
+
+  slider_handler(slider_values) {
+    this.setState({
+      slider_values: slider_values
+    })
   }
 
   get_models(){
@@ -44,7 +55,7 @@ class Session extends React.Component {
       })
       .then(function (res) {
           let data = res.data
-          console.log(data.transformExtremes)
+          console.log(data.ground_truth)
           session.setState({models: data.models,
                             rawData: data.rawData,
                             mins: data.mins,
@@ -52,7 +63,8 @@ class Session extends React.Component {
                             pca: data.pca,
                             mds: data.mds,
                             tsne: data.tsne,
-                            transformExtremes: data.transformExtremes
+                            transformExtremes: data.transformExtremes,
+                            predictionData: data.ground_truth
                           })
       })
       .catch(function (error) {
@@ -63,6 +75,7 @@ class Session extends React.Component {
   handleClick() {
     var session = this
     axios.post("http://localhost:5000", {
+        slider_values: session.state.slider_values
       })
       .then(function (res) {
           let data = res.data
@@ -103,8 +116,8 @@ class Session extends React.Component {
   
   render() {
     const currState = this.state
+    const session = this
     if (currState.rawData.length !== 0) {
-      console.log("here")
       return (
         <div id="session">
           <div id="my-container">
@@ -114,12 +127,15 @@ class Session extends React.Component {
             <Scatterplot 
               id="scatterplot"
               rawData={currState.rawData}
+              predictionData={currState.predictionData}
               mins={currState.mins}
               maxes={currState.maxes}
               pca={currState.pca}
               mds={currState.mds}
               tsne={currState.tsne}
               transformExtremes={currState.transformExtremes}
+              slider_values={currState.slider_values}
+              slider_handler={session.slider_handler}
             />
             <ModelSelector
               onClick={() => this.handleClick()}
@@ -131,7 +147,7 @@ class Session extends React.Component {
                 'Capital Loss': 0
               }}
             />
-            <ModelViewer
+            <ModelViewer id="dataview"
               models = {currState.models}
               set_dp_index={(i) => this.set_dp_index(i)}
             />
@@ -364,7 +380,7 @@ class ModelSelector extends React.Component {
     const features = this.props.features
     var proposedPoint = Object.keys(features).map(function(key){
                         // return <li className="tight" eventKey={key}>{key + ": " + features[key]}</li>;
-                        return <div className="tight" eventKey={key}>{key + ": " + features[key]}</div>;
+                        return <div className="tight" key={key}>{key + ": " + features[key]}</div>;
                       })
     return (
       <div id="model_selector">
@@ -396,9 +412,8 @@ class ModelViewer extends React.Component {
     var session = this
     var model_code = ''
     if (this.props.models !== ''){
-      model_code = this.props.models.map((model) => {
+      model_code = this.props.models.map((model, index_m) => {
         var string_success = ''
-        var pos = 50
         string_success = model.success.map((check, index) => {
           if (check === 'True'){
             return <div style={{position: "relative", left: "2%", display:"inline-block"}} key={index} onMouseOver={session.mouseOver.bind(session, index)}> {String.fromCharCode(9989)} </div>
@@ -406,7 +421,7 @@ class ModelViewer extends React.Component {
             return <div style={{position: "relative", left: "2%", display:"inline-block"}} key={index} onMouseOver={session.mouseOver.bind(session, index)}> {String.fromCharCode(10060)} </div>
           }
         })
-        return <div style = {{textAlign: "left"}}> 
+        return <div style = {{textAlign: "left"}} key={index_m}> 
                   <h4 style={{display: 'inline-block', fontWeight: 'bold'}}>{model.name} 
                       <div style= {{display: 'inline-block', position: "absolute", left: "50%", verticalAlign: "bottom"}}> {string_success} </div> 
                   </h4> 
@@ -418,9 +433,9 @@ class ModelViewer extends React.Component {
       <div id="model_viewer">
         <fieldset>
           <legend>Models</legend>
-          <Accordion>
+          <div>
             {model_code}
-          </Accordion>
+          </div>
 
         </fieldset>
       </div>
@@ -432,6 +447,8 @@ class Scatterplot extends Component {
   constructor(props) {
     super(props);
     var rawData = JSON.parse(props.rawData)
+    var predictionData = JSON.parse(props.predictionData)
+    console.log(predictionData)
     var margin = {top: 20, right: 20, bottom: 30, left: 40}
     var width = 460 - margin.left - margin.right
     var height = 300 - margin.top - margin.bottom
@@ -448,12 +465,15 @@ class Scatterplot extends Component {
     var mdsData = JSON.parse(props.mds)
     var tsneData = JSON.parse(props.tsne)
     var transformExtremes = JSON.parse(props.transformExtremes)
-    console.log(transformExtremes)
-
+    var slider_values = {};
+    for (var i = 0; i < possibleDimensions.length; i++){
+      slider_values[possibleDimensions[i]] = [mins[possibleDimensions[i]], maxes[possibleDimensions[i]]]
+    }
+    props.slider_handler(slider_values)
 
     this.state = {
       rawData: rawData,
-      predictionData: JSON.parse('{"132":1,"53":1,"110":1,"89":1,"33":0,"68":1,"4":0,"131":0,"81":1,"26":0,"77":0,"123":1,"2":1,"103":1,"113":1,"92":1,"10":0,"27":1,"13":0,"121":0,"116":0,"130":0,"85":0,"44":1,"80":0,"114":0,"102":1,"23":0,"84":1,"133":1,"60":0,"63":1,"30":1,"7":1,"1":0,"142":0}'),
+      predictionData: predictionData,
       pcaData: pcaData,
       mdsData: mdsData,
       tsneData: tsneData,
@@ -471,7 +491,9 @@ class Scatterplot extends Component {
       yAxis: yAxis,
       mins: mins,
       maxes: maxes,
-      transformExtremes: transformExtremes
+      transformExtremes: transformExtremes,
+      slider: 0,
+      slider_values: slider_values
     };
   }
 
@@ -479,6 +501,7 @@ class Scatterplot extends Component {
     this.initializeProjections()
     this.initializeDimensions()
     this.redrawScatterplots()
+    this.createSliders()
   }
 
   /* SCATTERPLOT CODE - YOU WILL NEED TO CHANGE THIS TO ADD TOOLTIPS */
@@ -494,6 +517,10 @@ class Scatterplot extends Component {
       // HINT: If you need to have a div floating around, like, say, 
       // for a tooltip, you can append it to this container:
       var scatterContainer = d3.select(containerElement)
+
+      function colorScale (d) {
+        return groundTruth[d.id] === 1 ? "green" : "red";
+      }
 
       // We destroy any existing SVGs since we're going to rebuild it.
       scatterContainer.select('svg').remove()
@@ -533,6 +560,15 @@ class Scatterplot extends Component {
           yAxisContainer.text(this.state.yDim)
       }
 
+      if (this.state.currProjectionOption === 'axis_aligned') {
+        var slider_rect = svg.append("rect")
+          .attr("x", scatterXScale(this.state.slider_values[this.state.xDim][0]))
+          .attr("y", scatterYScale(this.state.slider_values[this.state.yDim][1]))
+          .attr("width", scatterXScale(this.state.slider_values[this.state.xDim][1]) - scatterXScale(this.state.slider_values[this.state.xDim][0]))
+          .attr("height", scatterYScale(this.state.slider_values[this.state.yDim][0]) - scatterYScale(this.state.slider_values[this.state.yDim][1]))
+          .style("fill", "blue")
+          .style("opacity", 0.15);
+      }
       // draw dots into the scatterplot
       // Here, you can add event listeners that create the tooltips
       // HINT: If you add an event to each point, in the event, you will
@@ -565,13 +601,12 @@ class Scatterplot extends Component {
       };
       svg.selectAll(".dot")
           .data(data)
-          .enter().append("path")
+          .enter().append("circle")
               .attr("class", "dot")
-              .attr("r", 4.5)
-              .attr('fill', 'none')
-              .attr('stroke', 'black')
-              .attr('d', (d) => groundTruth[d.id] === 1 ? d3.svg.symbol().type("cross")() : d3.svg.symbol().type("circle")())
-              .attr('transform', function (d) { console.log(Math.floor(d.x)); return ('translate(' + scatterXScale(Math.floor(d.x)) + ', ' + scatterYScale(Math.floor(d.y)) + ')' ) })
+              .attr("r", 2.5)
+              .attr('fill', d => colorScale(d))
+              .attr('fill-opacity', .5)
+              .attr('transform', function (d) {return ('translate(' + scatterXScale(Math.floor(d.x)) + ', ' + scatterYScale(Math.floor(d.y)) + ')' ) })
               .attr('pointer-events', 'all')
               .on("mouseover", tipMouseover)
               .on("mouseout", tipMouseout);
@@ -658,16 +693,8 @@ class Scatterplot extends Component {
           var xPadding = (JSON.parse(transformExtremes[currProjectionOption][1])['x'] - JSON.parse(transformExtremes[currProjectionOption][0])['x']) * .05
           var yPadding = (JSON.parse(transformExtremes[currProjectionOption][1])['y'] - JSON.parse(transformExtremes[currProjectionOption][0])['y']) * .05
 
-          console.log(JSON.parse(this.state.transformExtremes[currProjectionOption][1])['x'])
-          console.log(yPadding)
-
           this.state.xScale.domain([JSON.parse(transformExtremes[currProjectionOption][0])['x'] - xPadding, JSON.parse(transformExtremes[currProjectionOption][1])['x'] + xPadding])
-          this.state.yScale.domain([JSON.parse(transformExtremes[currProjectionOption][0])['y'] - yPadding, JSON.parse(transformExtremes[currProjectionOption][1])['y'] + yPadding])
-
-          console.log(this.state.xScale)              
-
-          //this.state.xScale.nice()
-          //this.state.yScale.nice()              
+          this.state.yScale.domain([JSON.parse(transformExtremes[currProjectionOption][0])['y'] - yPadding, JSON.parse(transformExtremes[currProjectionOption][1])['y'] + yPadding])          
       }
   }
 
@@ -703,34 +730,61 @@ class Scatterplot extends Component {
       this.buildScatterPlot('#dataset-svg', scatterplotData, [], this.state.predictionData, this.state.rawData)
   }
   
+  createSliders() {
+    var slider = this.state.possibleDimensions.map((pd) => {
+      var session = this;
+       return(
+        <div key={pd}>
+          <p> {pd} </p>
+            <Nouislider
+              id = {pd}
+              range={{min: this.state.mins[pd], max: this.state.maxes[pd]}}
+              start={[this.state.mins[pd], this.state.maxes[pd]]}
+              onSlide={function(value, render, values) {
+                          var slider_values = session.state.slider_values;
+                          slider_values[this.options.id] = values;
+                          session.props.slider_handler(slider_values);
+                          session.setState({slider_values: slider_values})
+                          session.redrawScatterplots()
+                      }}
+              tooltips
+            />
+          <br></br>
+        </div>
+      )
+    })
+    this.setState({slider: slider})
+  }
+  
   render(){
     return (
       <div id="scatterplot"> 
-         <div class='container'>
-            <div class='dataset-container'>
-                <div class='svg-container' id='dataset-svg'>
-                </div>
-                <div class='data-control-container'>
-                    <p>
-                        X-axis: 
-                        <select name="x-axis" id="x-axis-select">
-                        </select>
-                    </p>
-                    <p>
-                        Y-axis:
-                        <select name="y-axis" id="y-axis-select">
-                        </select>
-                    </p>
-                </div>
-                <div class='data-control-container' id='projection-select'>
-                </div>
-                <div class='dataset-description-container'>
-                </div>
-            </div>
-          <div class='models-container'>
-              <ul>
-              </ul>
+        <div id='dataset-svg'>
+        </div>
+        <div>
+          <div className='data-control-container' style={{display:"inline-block", verticalAlign:"top", align:"left"}}>
+              <p>
+                  X-axis: 
+                  <select name="x-axis" id="x-axis-select" style={{display:"inline-block", position:"relative", top: "-50%"}}>
+                  </select>
+              </p>
+              <p>
+                  Y-axis:
+                  <select name="y-axis" id="y-axis-select" style={{display:"inline-block", position:"relative", top: "-50%"}}>
+                  </select>
+              </p>
           </div>
+          <div className='separator' style={{display:"inline-block", height:"10px", width:"20px"}}>
+          </div>
+          <div className='data-control-container' id='projection-select' style={{display:"inline-block", align:"right"}}>
+          </div>
+        </div>
+        <div className='dataset-description-container'>
+          {this.state.slider}
+        </div>
+        <div className='models-container'>
+            <ul>
+            </ul>
         </div>
       </div>
     );

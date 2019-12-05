@@ -15,7 +15,7 @@ training_df = pd.read_csv('../backend_testing/adult_data/adult.csv', sep='\s*,\s
                           usecols=['education-num', 'capital-gain', 'capital-loss', 'hours-per-week', 'age',
                                    'label'], engine='python')
 
-instantiate_models.create_models()
+#instantiate_models.create_models()
 models = []
 
 m1 = pickle.load(open('../m1.p', 'rb'))
@@ -41,6 +41,7 @@ models.append({'name': 'uniform_knn', 'model': uniform_knn, 'success': []})
 
 @app.route('/', methods = ["GET"])
 def get_models():
+    shorter = training_df[:200]
     droppedData = training_df.drop(columns=('label'))[:200]
     rawData = droppedData.to_json(orient='index')
     mins = droppedData.min().to_json()
@@ -66,6 +67,10 @@ def get_models():
     transformExtremes["tsne"] = [tsnedf.min().to_json(), tsnedf.max().to_json()]
     tsneJson = tsnedf.to_json()
 
+    print(shorter['label'])
+    print(shorter.sample()['label'])
+    shorter['gt'] = (shorter['label'] == shorter.loc[0, 'label']).astype(int)
+    ground_truth = shorter['gt'].to_json()
 
     models_init = [{key:value for (key, value) in model.items() if key not in ['model']} for model in models]
     return json.dumps({'models': models_init,
@@ -75,11 +80,21 @@ def get_models():
                        'pca': pcaJson,
                        'mds': mdsJson,
                        'tsne': tsneJson,
-                       'transformExtremes': json.dumps(transformExtremes)})
+                       'transformExtremes': json.dumps(transformExtremes),
+                       'ground_truth': ground_truth
+                       })
+
 
 @app.route('/', methods = ["GET", "POST"])
 def get_predictions():
-    datapoint = training_df.sample()
+    sv = request.json['slider_values']
+    slider_df = training_df[(training_df['age'] >= sv['age'][0]) & (training_df['age'] <= sv['age'][1]) &
+                            (training_df['education-num'] >= sv['education-num'][0]) & (training_df['education-num'] <= sv['education-num'][1]) &
+                            (training_df['capital-gain'] >= sv['capital-gain'][0]) & (training_df['capital-gain'] <= sv['capital-gain'][1]) &
+                            (training_df['capital-loss'] >= sv['capital-loss'][0]) & (training_df['capital-loss'] <= sv['capital-loss'][1]) &
+                            (training_df['hours-per-week'] >= sv['hours-per-week'][0]) & (training_df['hours-per-week'] <= sv['hours-per-week'][1])
+                            ]
+    datapoint = slider_df.sample()
     predictions = {}
     for model in models:
         predict_success = (model['model'].predict(datapoint.drop(columns=('label'))) == datapoint.iloc[0]['label'])
@@ -91,7 +106,8 @@ def get_predictions():
                        'hours': str(datapoint.iloc[0]['hours-per-week']),
                        'capital_gain': str(datapoint.iloc[0]['capital-gain']),
                        'capital_loss': str(datapoint.iloc[0]['capital-loss']),
-                       'label': str(datapoint.iloc[0]['label'])})
+                       'label': str(datapoint.iloc[0]['label'])
+                        })
 
 
 if __name__ == '__main__':
