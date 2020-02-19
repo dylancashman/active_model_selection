@@ -12,6 +12,8 @@ import ReactTags from 'react-tag-autocomplete';
 import axios from 'axios';
 import Nouislider from 'react-nouislider';
 import "nouislider/distribute/nouislider.css";
+import * as path from 'path';
+import AttributesSummary from './components/AttributesSummary';
 
 class App extends Component {
   render() {
@@ -55,7 +57,7 @@ class Session extends React.Component {
       })
       .then(function (res) {
           let data = res.data
-          console.log(data.ground_truth)
+          // console.log(data.ground_truth)
           session.setState({models: data.models,
                             rawData: data.rawData,
                             mins: data.mins,
@@ -448,7 +450,7 @@ class Scatterplot extends Component {
     super(props);
     var rawData = JSON.parse(props.rawData)
     var predictionData = JSON.parse(props.predictionData)
-    console.log(predictionData)
+    // console.log(predictionData)
     var margin = {top: 20, right: 20, bottom: 30, left: 40}
     var width = 460 - margin.left - margin.right
     var height = 300 - margin.top - margin.bottom
@@ -501,10 +503,9 @@ class Scatterplot extends Component {
     this.initializeProjections()
     this.initializeDimensions()
     this.redrawScatterplots()
-    this.createSliders()
+    // this.createSliders()
   }
 
-  /* SCATTERPLOT CODE - YOU WILL NEED TO CHANGE THIS TO ADD TOOLTIPS */
   buildScatterPlot(containerElement, data, modelPredictions, groundTruth, fullData) {
       var svgWidth, svgHeight, scatterXScale, scatterXAxis, scatterYScale, scatterYAxis;
       svgWidth = this.state.width;
@@ -514,8 +515,6 @@ class Scatterplot extends Component {
       scatterYScale =this.state.yScale;
       scatterYAxis = this.state.yAxis;
 
-      // HINT: If you need to have a div floating around, like, say, 
-      // for a tooltip, you can append it to this container:
       var scatterContainer = d3.select(containerElement)
 
       function colorScale (d) {
@@ -730,31 +729,31 @@ class Scatterplot extends Component {
       this.buildScatterPlot('#dataset-svg', scatterplotData, [], this.state.predictionData, this.state.rawData)
   }
   
-  createSliders() {
-    var slider = this.state.possibleDimensions.map((pd) => {
-      var session = this;
-       return(
-        <div key={pd}>
-          <p> {pd} </p>
-            <Nouislider
-              id = {pd}
-              range={{min: this.state.mins[pd], max: this.state.maxes[pd]}}
-              start={[this.state.mins[pd], this.state.maxes[pd]]}
-              onSlide={function(value, render, values) {
-                          var slider_values = session.state.slider_values;
-                          slider_values[this.options.id] = values;
-                          session.props.slider_handler(slider_values);
-                          session.setState({slider_values: slider_values})
-                          session.redrawScatterplots()
-                      }}
-              tooltips
-            />
-          <br></br>
-        </div>
-      )
-    })
-    this.setState({slider: slider})
-  }
+  // createSliders() {
+  //   var slider = this.state.possibleDimensions.map((pd) => {
+  //     var session = this;
+  //      return(
+  //       <div key={pd}>
+  //         <p> {pd} </p>
+  //           <Nouislider
+  //             id = {pd}
+  //             range={{min: this.state.mins[pd], max: this.state.maxes[pd]}}
+  //             start={[this.state.mins[pd], this.state.maxes[pd]]}
+  //             onSlide={function(value, render, values) {
+  //                         var slider_values = session.state.slider_values;
+  //                         slider_values[this.options.id] = values;
+  //                         session.props.slider_handler(slider_values);
+  //                         session.setState({slider_values: slider_values})
+  //                         session.redrawScatterplots()
+  //                     }}
+  //             tooltips
+  //           />
+  //         <br></br>
+  //       </div>
+  //     )
+  //   })
+  //   this.setState({slider: slider})
+  // }
   
   render(){
     return (
@@ -780,7 +779,7 @@ class Scatterplot extends Component {
           </div>
         </div>
         <div className='dataset-description-container'>
-          {this.state.slider}
+          <AttributesSummary></AttributesSummary>
         </div>
         <div className='models-container'>
             <ul>
