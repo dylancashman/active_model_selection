@@ -15,7 +15,7 @@ training_df = pd.read_csv('../backend_testing/adult_data/adult.csv', sep='\s*,\s
                           usecols=['education-num', 'capital-gain', 'capital-loss', 'hours-per-week', 'age',
                                    'label'], engine='python')
 
-#instantiate_models.create_models()
+# instantiate_models.create_models()
 models = []
 
 m1 = pickle.load(open('../m1.p', 'rb'))

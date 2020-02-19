@@ -4,7 +4,7 @@ def create_models():
     TRAINING_SET_CT = 50
     VALIDATION_SET_CT = 20
     NROWS = TRAINING_SET_CT + VALIDATION_SET_CT
-
+    print("CREATING MODELS")
     import pandas as pd
     import numpy as np
     import pickle
@@ -17,7 +17,7 @@ def create_models():
     val_labels = training_df['label'][TRAINING_SET_CT:]
     val_predictors = training_df.drop(columns=('label'))[TRAINING_SET_CT:]
 
-
+    print("STARTING TO TRAIN THEM")
     # training_df
 
     # Build random models
@@ -132,3 +132,6 @@ def create_models():
         pickle.dump(nb_1, open('../nb_1.p', 'wb'))
         model_dict["nb2_s%.2f" % smoothing] = nb_2
         pickle.dump(nb_2, open('../nb_2.p', 'wb'))
+
+if __name__ == '__main__':
+    create_models()
